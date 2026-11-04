@@ -1,0 +1,5 @@
+import { createClient } from '@supabase/supabase-js';
+import { RecordData, schema } from './model';
+export const supabase=process.env.NEXT_PUBLIC_SUPABASE_URL&&process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?createClient(process.env.NEXT_PUBLIC_SUPABASE_URL,process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY):null;
+export interface Repository {load():Promise<RecordData[]>; save(rows:RecordData[]):Promise<void>}
+export const repository:Repository={async load(){if(!supabase)return JSON.parse(localStorage.getItem('phd-demo')||'[]').map((r:unknown)=>schema.parse(r));const {data,error}=await supabase.from('navigator_records').select('payload');if(error)throw error;return data.map(r=>schema.parse(r.payload))},async save(rows){if(!supabase){localStorage.setItem('phd-demo',JSON.stringify(rows));return}const {data:{user}}=await supabase.auth.getUser();if(!user)throw Error('Sign in required');const {error}=await supabase.from('navigator_records').upsert(rows.map(r=>({id:r.id,user_id:user.id,kind:r.kind,payload:r})));if(error)throw error}};
